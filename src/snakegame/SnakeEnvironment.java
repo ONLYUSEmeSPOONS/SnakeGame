@@ -20,7 +20,7 @@ import java.awt.event.MouseEvent;
 class SnakeEnvironment extends Environment {
     private Grid grid;
     private Snake snake;
-    private int defaultDelay = 4;
+    private int defaultDelay = 2;
     private int delay = defaultDelay;
 
     @Override
@@ -61,6 +61,8 @@ class SnakeEnvironment extends Environment {
             snake.setDirection(Direction.LEFT);
         } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
             snake.setDirection(Direction.RIGHT);
+        } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+            snake.setGrowthCount(2);
         }  
     }
 
@@ -81,9 +83,9 @@ class SnakeEnvironment extends Environment {
         }
         
         if (snake != null) {
-            graphics.setColor(Color.GREEN);
+            graphics.setColor(Color.WHITE);
             for (int i = 0; i < snake.getBody().size(); i++) {
-                graphics.fillRect(grid.getCellPosition(snake.getBody().get(i)).x, grid.getCellPosition(snake.getBody().get(i)).y, grid.getCellWidth(), grid.getCellHeight());
+                graphics.fillOval(grid.getCellPosition(snake.getBody().get(i)).x, grid.getCellPosition(snake.getBody().get(i)).y, grid.getCellWidth(), grid.getCellHeight());
             }
         }
     }

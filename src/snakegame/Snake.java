@@ -40,8 +40,11 @@ public class Snake {
         }
         
         body.add(0, newHead);
-        body.remove(body.size() - 1);
-        
+        if (growthCount > 0) {
+            growthCount--;
+        } else {
+            body.remove(body.size() - 1);
+        }
     }
     
     public Point getHead(){
