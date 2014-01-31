@@ -40,7 +40,7 @@ public class Snake {
         }
         
         body.add(0, newHead);
-        if (growthCount > 0) {
+        if (getGrowthCount() > 0) {
             growthCount--;
         } else {
             body.remove(body.size() - 1);
@@ -99,5 +99,9 @@ public class Snake {
         this.direction = direction;
     }
     //</editor-fold>
+
+    void grow(int growth) {
+        this.growthCount += growth;
+    }
 
 }
