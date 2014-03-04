@@ -15,6 +15,7 @@ import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.util.ArrayList;
 
 /**
@@ -26,14 +27,16 @@ class SnakeEnvironment extends Environment {
     private GameState gameState = GameState.PAUSED;
     private Grid grid;
     private Snake snake;
-    private int defaultDelay = 0;
+    private int end;
+    private int defaultDelay = 3 / 4;
     private int delay = defaultDelay;
     private int score = 0;
     private ArrayList<Point> apples;
     private ArrayList<Point> bomb;
     private ArrayList<Point> poison;
     private ArrayList<Point> diamond;
-    private ArrayList<Point> lolipop;
+    private ArrayList<Point> lollipop;
+    private ArrayList<Point> smileyFace;
 
     @Override
     public void initializeEnvironment() {
@@ -60,19 +63,21 @@ class SnakeEnvironment extends Environment {
         this.poison.add(getRandomGridLocation());
         this.poison.add(getRandomGridLocation());
 
-        this.lolipop = new ArrayList<Point>();
-        this.lolipop.add(getRandomGridLocation());
-        this.lolipop.add(getRandomGridLocation());
+        this.lollipop = new ArrayList<Point>();
+        this.lollipop.add(getRandomGridLocation());
+        this.lollipop.add(getRandomGridLocation());
 
-
-
-
+        this.smileyFace = new ArrayList<Point>();
+        this.smileyFace.add(getRandomGridLocation());
+        this.smileyFace.add(getRandomGridLocation());
 
 
         snake = new Snake();
         snake.getBody().add(new Point(5, 5));
         snake.getBody().add(new Point(4, 5));
         snake.getBody().add(new Point(4, 4));
+        snake.getBody().add(new Point(3, 4));
+
 
         this.setBackground(ResourceTools.loadImageFromResource("resources/Silioutte.jpg"));
     }
@@ -85,21 +90,27 @@ class SnakeEnvironment extends Environment {
     @Override
     public void timerTaskHandler() {
         if (this.gameState == GameState.RUNNING) {
-
-
             if (snake != null) {
                 if (delay <= 0) {
                     snake.move();
+                    moveSmileyFace();
                     delay = defaultDelay;
+                    if (snake.selfHitTest()) {
+                        this.gameState = GameState.ENDED;
+                    }
                     checkSnakeAppleIntersection();
                     checkSnakeDiamondIntersection();
                     checkSnakeBombIntersection();
                     checkSnakePoisonIntersection();
+                    checkSnakeLollipopIntersection();
+                    checkSnakeSmileyFaceIntersection();
+                    moveSmileyFace();
                 } else {
                     delay--;
                 }
             }
         }
+
         if (snake.getDirection() == Direction.RIGHT) {
             if (snake.getHead().x >= this.grid.getColumns()) {
                 snake.getHead().x = 0;
@@ -117,18 +128,27 @@ class SnakeEnvironment extends Environment {
                 snake.getHead().y = 0;
             }
         }
+
     }
 
     @Override
     public void keyPressedHandler(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_UP) {
-            snake.setDirection(Direction.UP);
+            if (snake.getDirection() != Direction.DOWN) {
+                snake.setDirection(Direction.UP);
+            }
         } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-            snake.setDirection(Direction.DOWN);
+            if (snake.getDirection() != Direction.UP) {
+                snake.setDirection(Direction.DOWN);
+            }
         } else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-            snake.setDirection(Direction.LEFT);
+            if (snake.getDirection() != Direction.RIGHT) {
+                snake.setDirection(Direction.LEFT);
+            }
         } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-            snake.setDirection(Direction.RIGHT);
+            if (snake.getDirection() != Direction.LEFT) {
+                 snake.setDirection(Direction.RIGHT);
+            }
         } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
             if (gameState == GameState.RUNNING) {
                 gameState = GameState.PAUSED;
@@ -161,9 +181,9 @@ class SnakeEnvironment extends Environment {
             graphics.setColor(Color.WHITE);
             for (int i = 0; i < snake.getBody().size(); i++) {
                 graphics.fillOval(grid.getCellPosition(snake.getBody().get(i)).x, grid.getCellPosition(snake.getBody().get(i)).y, grid.getCellWidth(), grid.getCellHeight());
-
             }
         }
+
         graphics.setFont(new Font("Calibri ", Font.ITALIC, 50));
         graphics.drawString("Score: " + this.score, 50, 50);
 
@@ -180,15 +200,34 @@ class SnakeEnvironment extends Environment {
             GraphicsPalette.drawPoisonBottle(graphics, this.grid.getCellPosition(this.poison.get(i)), new Point(this.grid.getCellSize()), Color.yellow);
         }
 
+        for (int i = 0; i < this.smileyFace.size(); i++) {
+            GraphicsPalette.drawHappyFaceSunGlasses(graphics, this.grid.getCellPosition(this.smileyFace.get(i)), new Point(this.grid.getCellSize()), Color.GREEN);
+        }
+
+
         for (int i = 0; i < this.diamond.size(); i++) {
             GraphicsPalette.drawDiamond(graphics, this.grid.getCellPosition(this.diamond.get(i)), new Point(this.grid.getCellSize()), Color.CYAN);
         }
 
+        for (int i = 0; i < this.lollipop.size(); i++) {
+            GraphicsPalette.drawLollipop(graphics, this.grid.getCellPosition(this.lollipop.get(i)), new Point(this.grid.getCellSize()));
+        }
+
+//        GraphicsPalette.drawLollipop(graphics, new Point(100, 10), new Point(new Point(100, 100));            
+
+
+
         if (gameState == GameState.ENDED) {
+            graphics.setColor(Color.red);
             graphics.setFont(new Font("Calibri ", Font.ITALIC, 150));
             graphics.drawString("Game Over!!!", 420, 500);
         }
 
+        if (gameState == GameState.PAUSED) {
+            graphics.setColor(Color.GREEN);
+            graphics.setFont(new Font("Calibri ", Font.ITALIC, 90));
+            graphics.drawString("Press Spacebar To Start/Stop The Game!!!", 90, 500);
+        }
     }
 
     private void checkSnakeAppleIntersection() {
@@ -198,13 +237,10 @@ class SnakeEnvironment extends Environment {
         for (int i = 0; i < this.apples.size(); i++) {
             if (snake.getHead().equals(this.apples.get(i))) {
                 System.out.println("Apple Chompped");
-                this.snake.grow(2);
                 AudioPlayer.play("/resources/AppleBite.wav");
                 this.score += 15;
                 this.apples.get(i).setLocation(getRandomGridLocation());
                 this.snake.grow(1);
-
-
             }
 
         }
@@ -214,8 +250,7 @@ class SnakeEnvironment extends Environment {
         for (int i = 0; i < this.diamond.size(); i++) {
             if (snake.getHead().equals(this.diamond.get(i))) {
                 System.out.println("WhooHoo");
-                this.snake.grow(2);
-                this.score += 45;
+                this.score += 25;
                 AudioPlayer.play("/resources/DiamondTheme.wav");
                 this.diamond.get(i).setLocation(getRandomGridLocation());
                 this.snake.grow(2);
@@ -228,11 +263,15 @@ class SnakeEnvironment extends Environment {
     private void checkSnakeBombIntersection() {
         for (int j = 0; j < this.bomb.size(); j++) {
             if (snake.getHead().equals(this.bomb.get(j))) {
-                System.out.println("Ouch!!");
-                this.snake.grow(2);
+                System.out.println("Game Over!!!");
+                this.snake.grow(-3);
                 this.score += -15;
                 AudioPlayer.play("/resources/Explode1.wav");
                 this.bomb.get(j).setLocation(getRandomGridLocation());
+                this.end += 1;
+                if (this.end == 3) {
+                    gameState = GameState.ENDED;
+                }
             }
 
         }
@@ -242,12 +281,62 @@ class SnakeEnvironment extends Environment {
         for (int j = 0; j < this.poison.size(); j++) {
             if (snake.getHead().equals(this.poison.get(j))) {
                 System.out.println("Shatter");
-                this.snake.grow(2);
                 this.score += -20;
                 AudioPlayer.play("/resources/GlassBreak1.wav");
                 this.poison.get(j).setLocation(getRandomGridLocation());
             }
+        }
+    }
 
+    private void checkSnakeLollipopIntersection() {
+        for (int i = 0; i < this.lollipop.size(); i++) {
+            if (snake.getHead().equals(this.lollipop.get(i))) {
+                System.out.println("Shlluup");
+                AudioPlayer.play("/resources/spit.WAV");
+                this.score += 10;
+                this.lollipop.get(i).setLocation(getRandomGridLocation());
+            }
+        }
+    }
+
+    private void checkSnakeSmileyFaceIntersection() {
+        for (int i = 0; i < this.smileyFace.size(); i++) {
+            if (snake.getHead().equals(this.smileyFace.get(i))) {
+                System.out.println("Shlluup");
+                this.smileyFace.get(i).setLocation(getRandomGridLocation());
+            }
+        }
+    }
+
+    private void moveSmileyFace() {
+        for (Point location : smileyFace) {
+            if (snake.getHead().equals(location)) {
+                score += 100;
+            }
+
+            if (Math.random() > .5) {
+                location.x += 1;
+                if (location.x >= this.grid.getColumns()) {
+                    location.x = 0;
+                }
+            } else {
+                location.x -= 1;
+                if (location.x <= -1) {
+                    location.x = this.grid.getColumns() - 1;
+                }
+            }
+
+            if (Math.random() > .5) {
+                location.y += 1;
+                if (location.y >= this.grid.getRows()) {
+                    location.y = 0;
+                }
+            } else {
+                location.y -= 1;
+                if (location.y <= -1) {
+                    location.y = this.grid.getRows() - 1;
+                }
+            }
         }
     }
 }
